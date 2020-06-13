@@ -45,12 +45,20 @@ public class MyDBHandler extends SQLiteOpenHelper {
 
     private static final String FILENAME = "MyDBHandler.java";
     private static final String TAG = "Whack-A-Mole3.0!";
+    public static String DATABASE_NAME = "accountDB.db";
+    public static int DATABASE_VERSION = 1;
+    public  static String ACCOUNTS = "Accounts";
+    public static String COLUMN_USERNAME = "Username";
+    public static String COLUMN_PASSWORD = "Password";
+    public static String COLUMN_LEVEL = "Level";
+    public static String COLUMN_SCORE = "Score";
 
     public MyDBHandler(Context context, String name, SQLiteDatabase.CursorFactory factory, int version)
     {
         /* HINT:
             This is used to init the database.
          */
+        super(context, DATABASE_NAME, factory, DATABASE_VERSION);
     }
     @Override
     public void onCreate(SQLiteDatabase db)
@@ -59,7 +67,10 @@ public class MyDBHandler extends SQLiteOpenHelper {
             This is triggered on DB creation.
             Log.v(TAG, "DB Created: " + CREATE_ACCOUNTS_TABLE);
          */
+        String CREATE_ACCOUNTS_TABLE = "CREATE TABLE "+ ACCOUNTS+ "("+ COLUMN_USERNAME + " TEXT," + COLUMN_PASSWORD + " TEXT,"+ COLUMN_LEVEL + " TEXT," + COLUMN_SCORE+ " TEXT" +")";
 
+        db.execSQL(CREATE_ACCOUNTS_TABLE);
+        Log.v(TAG, "DB Created: " + CREATE_ACCOUNTS_TABLE);
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
@@ -67,6 +78,9 @@ public class MyDBHandler extends SQLiteOpenHelper {
         /* HINT:
             This is triggered if there is a new version found. ALL DATA are replaced and irreversible.
          */
+        db.execSQL("DROP TABLE IF EXISTS " + ACCOUNTS);
+        onCreate(db);
+
     }
 
     public void addUser(UserData userData)
@@ -75,6 +89,21 @@ public class MyDBHandler extends SQLiteOpenHelper {
                 This adds the user to the database based on the information given.
                 Log.v(TAG, FILENAME + ": Adding data for Database: " + values.toString());
              */
+
+        ContentValues values = new ContentValues();
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        for (int level: userData.getLevels()
+             ) {
+            values.put(COLUMN_USERNAME, userData.getMyUserName());
+            values.put(COLUMN_PASSWORD, userData.getMyPassword());
+            values.put(COLUMN_LEVEL, level);
+            values.put(COLUMN_SCORE, 0);
+            db.insert(ACCOUNTS, null, values);
+            Log.v(TAG, FILENAME + ": Adding data for Database: " + values.toString());
+        }
+
+        db.close();
     }
 
     public UserData findUser(String username)
@@ -85,20 +114,34 @@ public class MyDBHandler extends SQLiteOpenHelper {
             Log.v(TAG, FILENAME +": Find user form database: " + query);
 
             The following should be used in getting the query data.
-            you may modify the code to suit your design.
+            you may modify the code to suit your design. */
 
+        String query = "SELECT * FROM "+ACCOUNTS+" WHERE "+ COLUMN_USERNAME + " = \""+ username +"\"";
+        Log.v(TAG, FILENAME +": Find user form database: " + query);
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        Cursor cursor = db.rawQuery(query, null);
+
+        UserData queryData = new UserData();
+        ArrayList<Integer> ScoresList = new ArrayList<Integer>();
+        ArrayList<Integer> LevelList = new ArrayList<Integer>();
+        Log.v(TAG, FILENAME +": QueryData: "+ LevelList.toString() + ScoresList.toString());
             if(cursor.moveToFirst()){
                 do{
-                    ...
-                    .....
-                    ...
+                    queryData.setMyUserName(cursor.getString(0));
+                    queryData.setMyPassword(cursor.getString(1));
+                    LevelList.add(cursor.getInt(2));
+                    ScoresList.add(cursor.getInt(3));
                 }while(cursor.moveToNext());
-                Log.v(TAG, FILENAME + ": QueryData: " + queryData.getLevels().toString() + queryData.getScores().toString());
+                queryData.setLevels(LevelList);
+                queryData.setScores(ScoresList);
             }
             else{
                 Log.v(TAG, FILENAME+ ": No data found!");
+                queryData = null;
             }
-         */
+            return queryData;
     }
 
     public boolean deleteAccount(String username) {
@@ -107,6 +150,45 @@ public class MyDBHandler extends SQLiteOpenHelper {
             This is not reversible.
             Log.v(TAG, FILENAME + ": Database delete user: " + query);
          */
+        boolean result = false;
+        String query = "SELECT * FROM "+ACCOUNTS+" WHERE "+ COLUMN_USERNAME + "=\""+ username +"\"";
 
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(query, null);
+
+        UserData delData = new UserData();
+
+        if(cursor.moveToFirst()){
+            delData.setMyUserName(cursor.getString(0));
+            db.delete(ACCOUNTS, COLUMN_USERNAME + "= ?", new String[]{String.valueOf(delData.getMyUserName())});
+            cursor.close();
+            result = true;
+            Log.v(TAG, FILENAME + ": Database delete user: " + query);
+        }
+        db.close();
+        return result;
+    }
+
+    public void updatePoints(String username, int Level, int NewScore){
+        /*get current high score in the level
+        compare to new score
+        if higher then change high score
+         */
+        int currentScore;
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_SCORE, NewScore);
+
+        String query = "SELECT "+COLUMN_SCORE+" FROM "+ACCOUNTS+" WHERE "+ COLUMN_USERNAME + " = \""+ username +"\""+ " AND "+COLUMN_LEVEL+" = " + Level;
+
+        String whereClause = COLUMN_USERNAME + " = \""+ username +"\""+ " AND "+COLUMN_LEVEL+" = " + Level;
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(query, null);
+        if(cursor.moveToFirst()){
+            currentScore = cursor.getInt(0);
+            if(NewScore > currentScore){
+                db.update(ACCOUNTS, values, whereClause,null);
+                db.close();
+            }
+        }
     }
 }

@@ -11,6 +11,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+
 public class Main3Activity extends AppCompatActivity {
     /* Hint:
         1. This displays the available levels from 1 to 10 to the user.
@@ -27,17 +30,53 @@ public class Main3Activity extends AppCompatActivity {
      */
     private static final String FILENAME = "Main3Activity.java";
     private static final String TAG = "Whack-A-Mole3.0!";
+    RecyclerView recyclerView;
+    @Override
+    public void onResume() {
+        super.onResume();
+        setContentView(R.layout.activity_main3);
+        Intent receivingEnd = getIntent();
+        UserData CurrentUser = (UserData) receivingEnd.getSerializableExtra("CurrentUser");
+
+        //Create RecyclerView in the layout and bind the data, ViewHolder and Adapter to the it
+        recyclerView = findViewById(R.id.recyclerView);
+
+        //Create adapter and pass in the data
+        CustomScoreAdaptor mAdapter = new CustomScoreAdaptor(CurrentUser, this);
+        //Layout manager tells recyclerview how to draw the list
+        LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
+        //pass in layout, animation and adapter.
+        recyclerView.setLayoutManager(mLayoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(mAdapter);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main3);
+        Intent receivingEnd = getIntent();
+        UserData CurrentUser = (UserData) receivingEnd.getSerializableExtra("CurrentUser");
+
+        //Create RecyclerView in the layout and bind the data, ViewHolder and Adapter to the it
+        recyclerView = findViewById(R.id.recyclerView);
+
+        //Create adapter and pass in the data
+        CustomScoreAdaptor mAdapter = new CustomScoreAdaptor(CurrentUser, this);
+        //Layout manager tells recyclerview how to draw the list
+        LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
+        //pass in layout, animation and adapter.
+        recyclerView.setLayoutManager(mLayoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(mAdapter);
+
         /* Hint:
         This method receives the username account data and looks up the database for find the
         corresponding information to display in the recyclerView for the level selections page.
 
         Log.v(TAG, FILENAME + ": Show level for User: "+ userName);
          */
+
     }
 
     @Override
